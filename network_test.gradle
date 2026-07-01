@@ -1,0 +1,32 @@
+
+import java.net.URL
+import java.net.HttpURLConnection
+
+task testNetwork {
+    doLast {
+        def urlString = "https://maven.google.com/com/android/tools/build/gradle/8.12.2/gradle-8.12.2.pom"
+        println "TEST_START"
+        println "Target: $urlString"
+        try {
+            def url = new URL(urlString)
+            def conn = (HttpURLConnection) url.openConnection()
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            conn.requestMethod = "GET"
+            println "Connecting..."
+            conn.connect()
+            println "RESPONSE_CODE: ${conn.responseCode}"
+            println "TEST_RESULT: SUCCESS"
+        } catch (Exception e) {
+            println "TEST_RESULT: FAILURE"
+            println "EXCEPTION: ${e.getClass().name}: ${e.message}"
+            def cause = e.cause
+            while (cause != null) {
+                println "CAUSED_BY: ${cause.getClass().name}: ${cause.message}"
+                cause = cause.cause
+            }
+            // Throwing exception so it shows up in the build error if needed
+            throw e
+        }
+    }
+}

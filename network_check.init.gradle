@@ -1,0 +1,34 @@
+
+import java.net.URL
+import java.net.HttpURLConnection
+
+println "------------------------------------------------------------"
+println "NETWORK DIAGNOSTIC START"
+def urlString = "https://maven.google.com/com/android/tools/build/gradle/8.12.2/gradle-8.12.2.pom"
+println "Attempting to fetch: $urlString"
+
+try {
+    def url = new URL(urlString)
+    def connection = (HttpURLConnection) url.openConnection()
+    connection.connectTimeout = 10000
+    connection.readTimeout = 10000
+    connection.requestMethod = "GET"
+    
+    println "Response Code: ${connection.responseCode}"
+    if (connection.responseCode == 200) {
+        println "SUCCESS: POM file reached."
+    } else {
+        println "FAILURE: Received response code ${connection.responseCode}"
+    }
+} catch (java.net.UnknownHostException e) {
+    println "FAILURE: UnknownHostException - DNS issue. Cannot resolve maven.google.com"
+} catch (javax.net.ssl.SSLHandshakeException e) {
+    println "FAILURE: SSLHandshakeException - Certificate issue. Likely SSL inspection/firewall."
+} catch (java.net.ConnectException e) {
+    println "FAILURE: ConnectException - Connection refused or timeout."
+} catch (Exception e) {
+    println "FAILURE: ${e.getClass().name}: ${e.message}"
+    e.printStackTrace()
+}
+println "NETWORK DIAGNOSTIC END"
+println "------------------------------------------------------------"

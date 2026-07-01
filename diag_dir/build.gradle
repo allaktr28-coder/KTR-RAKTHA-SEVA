@@ -1,0 +1,61 @@
+
+import java.net.URL
+import java.net.HttpURLConnection
+
+task networkTest {
+    doLast {
+        def target = "https://maven.google.com/com/android/tools/build/gradle/8.12.2/gradle-8.12.2.pom"
+        println "DIAG_START"
+        println "Target: $target"
+        try {
+            def url = new URL(target)
+            def conn = (HttpURLConnection) url.openConnection()
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            println "Connecting..."
+            conn.connect()
+            println "RESPONSE_CODE: ${conn.responseCode}"
+            if (conn.responseCode == 200) {
+                println "RESULT: SUCCESS - Your machine CAN reach Google Maven."
+            } else {
+                println "RESULT: FAILURE - Connected but got code ${conn.responseCode}"
+            }
+        } catch (Exception e) {
+            println "RESULT: FAILURE"
+            println "EXCEPTION: ${e.getClass().name}: ${e.message}"
+            def cause = e.cause
+            while (cause != null) {
+                println "CAUSED BY: ${cause.getClass().name}: ${cause.message}"
+                cause = cause.cause
+            }
+        }
+        println "DIAG_END"
+    }
+}
+
+task resolveTest {
+    doLast {
+        println "RESOLVE_START"
+        repositories {
+            google()
+        }
+        try {
+            def config = configurations.detachedConfiguration(
+                dependencies.create("com.android.tools.build:gradle:8.12.2")
+            )
+            config.setTransitive(false)
+            println "Attempting to resolve artifact..."
+            config.files.each { println "Resolved to: ${it.absolutePath}" }
+            println "RESULT: SUCCESS"
+        } catch (Exception e) {
+            println "RESULT: FAILURE"
+            println "EXCEPTION: ${e.getClass().name}: ${e.message}"
+            def cause = e.cause
+            while (cause != null) {
+                println "CAUSED BY: ${cause.getClass().name}: ${cause.message}"
+                cause = cause.cause
+            }
+        }
+        println "RESOLVE_END"
+    }
+}

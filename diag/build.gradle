@@ -1,0 +1,35 @@
+
+import java.net.URL
+import java.net.HttpURLConnection
+
+task networkTest {
+    doLast {
+        def urlString = "https://maven.google.com/com/android/tools/build/gradle/8.12.2/gradle-8.12.2.pom"
+        def logFile = new File("${projectDir}/../network_report.txt")
+        logFile.text = "Starting Network Diagnostic\n"
+        logFile << "Target: $urlString\n"
+        
+        try {
+            def url = new URL(urlString)
+            def conn = (HttpURLConnection) url.openConnection()
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            logFile << "Connecting...\n"
+            conn.connect()
+            logFile << "Response Code: ${conn.responseCode}\n"
+            logFile << "SUCCESS\n"
+        } catch (Exception e) {
+            logFile << "FAILURE\n"
+            logFile << "Exception: ${e.getClass().name}\n"
+            logFile << "Message: ${e.message}\n"
+            def cause = e.cause
+            while (cause != null) {
+                logFile << "Caused by: ${cause.getClass().name}: ${cause.message}\n"
+                cause = cause.cause
+            }
+            def writer = new StringWriter()
+            e.printStackTrace(new PrintWriter(writer))
+            logFile << "Stacktrace:\n${writer.toString()}\n"
+        }
+    }
+}

@@ -1,0 +1,34 @@
+
+task testConnection {
+    doLast {
+        def target = "https://maven.google.com/com/android/tools/build/gradle/8.12.2/gradle-8.12.2.pom"
+        println "Checking connection to: $target"
+        
+        // 1. Try Java URL connection
+        try {
+            def url = new URL(target)
+            def conn = url.openConnection()
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            println "Java Connection Response Code: ${conn.responseCode}"
+        } catch (Exception e) {
+            println "Java Connection Failed: ${e.getClass().name}: ${e.message}"
+            def cause = e.cause
+            while (cause) {
+                println "  Caused by: ${cause.getClass().name}: ${cause.message}"
+                cause = cause.cause
+            }
+        }
+        
+        // 2. Try executing curl
+        try {
+            def process = "curl -v $target".execute()
+            def out = new StringBuilder(), err = new StringBuilder()
+            process.waitForProcessOutput(out, err)
+            println "Curl Output:\n$out"
+            println "Curl Errors:\n$err"
+        } catch (Exception e) {
+            println "Curl execution failed: ${e.message}"
+        }
+    }
+}

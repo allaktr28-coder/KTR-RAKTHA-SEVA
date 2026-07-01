@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "405470814505",
+    "project_id": "ktr-raktha-seva",
+    "storage_bucket": "ktr-raktha-seva.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:405470814505:android:98a8ee0a5365dbce7d1738",
+        "android_client_info": {
+          "package_name": "com.example.ktrrakthaseva"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDy7tn-I8UGP4V2RdXGDMndIiR5XVu9sOk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

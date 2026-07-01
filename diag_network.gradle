@@ -1,0 +1,47 @@
+
+task runDiag {
+    doLast {
+        def pomUrl = "https://maven.google.com/com/android/tools/build/gradle/8.12.2/gradle-8.12.2.pom"
+        def reportFile = new File("C:/Users/allak/AndroidStudioProjects/KTRRAKTHASEVA3/network_report.txt")
+        reportFile.text = "NETWORK DIAGNOSTIC REPORT\n"
+        reportFile << "Target POM: $pomUrl\n\n"
+
+        // 1. Try Java connection
+        reportFile << "--- Java Connection Test ---\n"
+        try {
+            def url = new URL(pomUrl)
+            def conn = url.openConnection()
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            reportFile << "Response Code: ${conn.responseCode}\n"
+            reportFile << "Response Message: ${conn.responseMessage}\n"
+            if (conn.responseCode == 200) {
+                reportFile << "Success: Raw Java can reach the artifact.\n"
+            }
+        } catch (Exception e) {
+            reportFile << "Failure: Java connection failed.\n"
+            reportFile << "Exception: ${e.getClass().name}\n"
+            reportFile << "Message: ${e.message}\n"
+            def cause = e.cause
+            while (cause) {
+                reportFile << "Caused by: ${cause.getClass().name}: ${cause.message}\n"
+                cause = cause.cause
+            }
+        }
+
+        // 2. Try Curl
+        reportFile << "\n--- Curl Connection Test ---\n"
+        try {
+            def out = new StringBuilder(), err = new StringBuilder()
+            def proc = "curl -v $pomUrl".execute()
+            proc.waitForProcessOutput(out, err)
+            reportFile << "STDOUT:\n${out}\n"
+            reportFile << "STDERR:\n${err}\n"
+            reportFile << "Exit value: ${proc.exitValue()}\n"
+        } catch (Exception e) {
+            reportFile << "Curl not found or failed: ${e.message}\n"
+        }
+        
+        println "Diagnostic complete. See network_report.txt"
+    }
+}

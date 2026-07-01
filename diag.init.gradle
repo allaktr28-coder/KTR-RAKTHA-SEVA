@@ -1,0 +1,30 @@
+
+import java.net.URL
+import java.net.HttpURLConnection
+import java.io.File
+
+def report = new File("C:/Users/allak/AndroidStudioProjects/KTRRAKTHASEVA3/diag_report.txt")
+report.text = "DIAG START\n"
+try {
+    def urlString = "https://maven.google.com/com/android/tools/build/gradle/8.12.2/gradle-8.12.2.pom"
+    report << "Target: ${urlString}\n"
+    def url = new URL(urlString)
+    def conn = (HttpURLConnection) url.openConnection()
+    conn.connectTimeout = 10000
+    conn.readTimeout = 10000
+    report << "Attempting connection...\n"
+    conn.connect()
+    report << "Response Code: ${conn.responseCode}\n"
+    if (conn.responseCode == 200) {
+        report << "SUCCESS\n"
+    } else {
+        report << "FAILURE: HTTP ${conn.responseCode}\n"
+    }
+} catch (Exception e) {
+    report << "EXCEPTION: ${e.getClass().name}\n"
+    report << "MESSAGE: ${e.message}\n"
+    def sw = new StringWriter()
+    e.printStackTrace(new PrintWriter(sw))
+    report << "STACKTRACE:\n${sw.toString()}\n"
+}
+report << "DIAG END\n"

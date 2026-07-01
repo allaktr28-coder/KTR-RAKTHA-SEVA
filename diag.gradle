@@ -1,0 +1,37 @@
+
+task runCurl {
+    doLast {
+        def outputFile = new File("C:/Users/allak/AndroidStudioProjects/KTRRAKTHASEVA3/curl_output.txt")
+        outputFile.text = "Starting curl diagnostic...\n"
+        try {
+            def process = "curl -v https://maven.google.com/com/android/tools/build/gradle/8.12.2/gradle-8.12.2.pom".execute()
+            def out = new StringBuilder(), err = new StringBuilder()
+            process.waitForProcessOutput(out, err)
+            outputFile << "STDOUT:\n" << out.toString() << "\n"
+            outputFile << "STDERR:\n" << err.toString() << "\n"
+            outputFile << "Process exit value: " << process.exitValue() << "\n"
+        } catch (Exception e) {
+            outputFile << "Error executing curl: " << e.message << "\n"
+        }
+    }
+}
+
+task runJavaDiag {
+    doLast {
+        def outputFile = new File("C:/Users/allak/AndroidStudioProjects/KTRRAKTHASEVA3/java_diag_output.txt")
+        outputFile.text = "Starting Java network diagnostic...\n"
+        try {
+            def url = new URL("https://maven.google.com/com/android/tools/build/gradle/8.12.2/gradle-8.12.2.pom")
+            def conn = url.openConnection()
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            outputFile << "Response Code: ${conn.responseCode}\n"
+        } catch (Exception e) {
+            outputFile << "Caught Exception: ${e.getClass().name}\n"
+            outputFile << "Message: ${e.message}\n"
+            def writer = new StringWriter()
+            e.printStackTrace(new PrintWriter(writer))
+            outputFile << "Stacktrace:\n" << writer.toString() << "\n"
+        }
+    }
+}

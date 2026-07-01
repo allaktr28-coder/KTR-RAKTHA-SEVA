@@ -1,0 +1,29 @@
+
+import java.net.URL
+import java.net.HttpURLConnection
+
+task checkGoogleMaven {
+    doLast {
+        def target = "https://maven.google.com/com/android/tools/build/gradle/8.12.2/gradle-8.12.2.pom"
+        println "DIAGNOSTIC: Fetching $target"
+        try {
+            def url = new URL(target)
+            def conn = (HttpURLConnection) url.openConnection()
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            println "DIAGNOSTIC: Connected. Response Code: ${conn.responseCode}"
+            if (conn.responseCode == 200) {
+                println "DIAGNOSTIC: SUCCESS"
+            }
+        } catch (Exception e) {
+            println "DIAGNOSTIC: FAILURE"
+            println "DIAGNOSTIC: EXCEPTION: ${e.getClass().name}"
+            println "DIAGNOSTIC: MESSAGE: ${e.message}"
+            def root = e
+            while (root.cause != null) {
+                root = root.cause
+                println "DIAGNOSTIC: CAUSED BY: ${root.getClass().name}: ${root.message}"
+            }
+        }
+    }
+}

@@ -1,0 +1,51 @@
+
+import java.net.URL
+import java.net.HttpURLConnection
+import java.io.File
+
+def resultFile = new File("C:/Users/allak/AndroidStudioProjects/KTRRAKTHASEVA3/network_result.txt")
+resultFile.text = "HARD NETWORK DIAGNOSTIC START\n"
+
+def artifactUrl = "https://maven.google.com/com/android/tools/build/gradle/8.12.2/gradle-8.12.2.pom"
+resultFile << "Target: $artifactUrl\n"
+
+try {
+    long start = System.currentTimeMillis()
+    def url = new URL(artifactUrl)
+    def connection = (HttpURLConnection) url.openConnection()
+    connection.connectTimeout = 5000
+    connection.readTimeout = 5000
+    connection.requestMethod = "GET"
+    
+    resultFile << "Connecting...\n"
+    connection.connect()
+    
+    int code = connection.responseCode
+    long duration = System.currentTimeMillis() - start
+    
+    resultFile << "SUCCESS: Connection established in ${duration}ms\n"
+    resultFile << "HTTP Response Code: $code\n"
+    
+    if (code == 200) {
+        resultFile << "RESULT: Your machine CAN reach Google Maven artifacts via Java/Gradle.\n"
+    } else {
+        resultFile << "RESULT: Connected but received error code $code.\n"
+    }
+} catch (java.net.UnknownHostException e) {
+    resultFile << "RESULT: DNS FAILURE. Cannot resolve 'maven.google.com'.\n"
+    resultFile << "Details: ${e.message}\n"
+} catch (javax.net.ssl.SSLHandshakeException e) {
+    resultFile << "RESULT: SSL/CERTIFICATE FAILURE. A firewall, antivirus, or VPN is intercepting the connection.\n"
+    resultFile << "Details: ${e.message}\n"
+} catch (java.net.ConnectException e) {
+    resultFile << "RESULT: CONNECTION REFUSED/TIMEOUT. Port 443 might be blocked.\n"
+    resultFile << "Details: ${e.message}\n"
+} catch (Exception e) {
+    resultFile << "RESULT: UNKNOWN ERROR: ${e.getClass().simpleName}\n"
+    resultFile << "Details: ${e.message}\n"
+    def writer = new StringWriter()
+    e.printStackTrace(new PrintWriter(writer))
+    resultFile << writer.toString()
+}
+
+resultFile << "HARD NETWORK DIAGNOSTIC END\n"

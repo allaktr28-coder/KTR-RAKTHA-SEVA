@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // User profiles: Only the owner can write; all authenticated users can read (for matching)
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /requests/{requestId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+
+      // Production Security Logic:
+      // 1. Requesters can update their own requests.
+      // 2. Donors can accept 'OPEN' requests by assigning themselves as 'acceptedById' and setting status to 'IN_PROGRESS'.
+      // 3. Admins have full override.
+      allow update: if request.auth != null && (
+        resource.data.requesterId == request.auth.uid ||
+        (
+          resource.data.status == 'OPEN' &&
+          request.resource.data.status == 'IN_PROGRESS' &&
+          request.resource.data.acceptedById == request.auth.uid
+        ) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
+      );
+
+      allow delete: if request.auth != null && (
+        resource.data.requesterId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
+      );
+
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null;
+      }
+
+      match /responses/{responseId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == responseId;
+      }
+    }
+
+    match /blood_banks/{bankId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+  }
+}
