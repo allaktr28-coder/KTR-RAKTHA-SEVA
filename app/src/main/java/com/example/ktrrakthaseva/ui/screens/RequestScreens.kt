@@ -260,6 +260,7 @@ fun RequestDetailScreen(
 @Composable
 fun ChatScreen(requestId: String?, onBack: () -> Unit, viewModel: ChatViewModel = hiltViewModel()) {
     val messages by viewModel.messages.collectAsState()
+    val currentUserId = viewModel.currentUserId
     var messageText by remember { mutableStateOf("") }
     LaunchedEffect(requestId) { requestId?.let { viewModel.setRequestId(it) } }
 
@@ -317,7 +318,7 @@ fun ChatScreen(requestId: String?, onBack: () -> Unit, viewModel: ChatViewModel 
                     reverseLayout = false
                 ) {
                     items(messages) { message ->
-                        ChatBubble(message.text, isFromMe = true) // Placeholder logic for sender
+                        ChatBubble(message.text, isFromMe = message.senderId == currentUserId)
                     }
                 }
             }

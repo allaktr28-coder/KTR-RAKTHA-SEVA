@@ -1,5 +1,6 @@
 package com.example.ktrrakthaseva.data.repository
 
+import android.util.Log
 import com.example.ktrrakthaseva.data.model.*
 import com.example.ktrrakthaseva.util.BloodCompatibility
 import com.example.ktrrakthaseva.util.LocationUtils
@@ -37,10 +38,29 @@ class FirebaseRepository @Inject constructor(
     fun getCurrentUserId(): String? = auth.currentUser?.uid
 
     suspend fun getUserProfile(uid: String): User? {
-        // Do not catch exceptions here; let the ViewModel handle it to distinguish 
-        // between "document does not exist" and "network error".
-        val snapshot = usersCollection.document(uid).get().await()
-        return if (snapshot.exists()) snapshot.toObject(User::class.java) else null
+        val doc = usersCollection.document(uid).get().await()
+        if (!doc.exists()) return null
+        return try {
+            doc.toObject(User::class.java)
+        } catch (e: Exception) {
+            Log.e("FirebaseRepo", "Manual fallback for User profile deserialization", e)
+            val data = doc.data ?: return null
+            User(
+                uid = data["uid"] as? String ?: uid,
+                name = data["name"] as? String ?: "",
+                email = data["email"] as? String ?: "",
+                phone = data["phone"] as? String ?: "",
+                bloodType = (data["bloodType"] as? String)?.let {
+                    runCatching { BloodType.valueOf(it) }.getOrNull()
+                },
+                address = data["address"] as? String ?: "",
+                state = data["state"] as? String ?: "",
+                isAvailable = data["isAvailable"] as? Boolean ?: true,
+                isAdmin = data["isAdmin"] as? Boolean ?: false,
+                totalDonations = (data["totalDonations"] as? Long)?.toInt() ?: 0,
+                points = (data["points"] as? Long)?.toInt() ?: 0
+            )
+        }
     }
 
     suspend fun saveUserProfile(user: User) {
@@ -95,6 +115,31 @@ class FirebaseRepository @Inject constructor(
         }
     }
 
+    fun getNearbyDonors(bloodType: BloodType?, location: GeoPoint, radiusKm: Double): Flow<List<User>> = callbackFlow {
+        val query = if (bloodType != null) {
+            val compatibleTypes = BloodCompatibility.getCompatibleBloodTypes(bloodType)
+            usersCollection.whereIn("bloodType", compatibleTypes.map { it.name })
+        } else {
+            usersCollection
+        }
+
+        val subscription = query.whereEqualTo("isAvailable", true)
+            .addSnapshotListener { snapshot, _ ->
+                snapshot?.let {
+                    val donors = it.toObjects(User::class.java)
+                    val filtered = donors.filter { donor ->
+                        val donorLoc = donor.location ?: return@filter false
+                        LocationUtils.calculateDistance(location, donorLoc) <= radiusKm
+                    }.sortedBy { donor ->
+                        val donorLoc = donor.location!!
+                        LocationUtils.calculateDistance(location, donorLoc)
+                    }
+                    trySend(filtered)
+                }
+            }
+        awaitClose { subscription.remove() }
+    }
+
     suspend fun acceptRequest(requestId: String, donorId: String) {
         val batch = firestore.batch()
         val requestRef = requestsCollection.document(requestId)
@@ -119,6 +164,37 @@ class FirebaseRepository @Inject constructor(
                         LeaderboardEntry(user?.uid ?: "", user?.name ?: "", user?.totalDonations ?: 0, user?.points ?: 0, index + 1)
                     }
                     trySend(entries)
+                }
+            }
+        awaitClose { subscription.remove() }
+    }
+
+    suspend fun sendMessage(requestId: String, message: ChatMessage) {
+        requestsCollection.document(requestId).collection("messages").add(message).await()
+    }
+
+    fun getChatMessages(requestId: String): Flow<List<ChatMessage>> = callbackFlow {
+        val subscription = requestsCollection.document(requestId).collection("messages")
+            .orderBy("timestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, _ ->
+                snapshot?.let {
+                    trySend(it.toObjects(ChatMessage::class.java))
+                }
+            }
+        awaitClose { subscription.remove() }
+    }
+
+    fun getNearbyRequests(userLocation: GeoPoint, radiusInKm: Double): Flow<List<BloodRequest>> = callbackFlow {
+        val subscription = requestsCollection
+            .whereEqualTo("status", RequestStatus.OPEN)
+            .addSnapshotListener { snapshot, _ ->
+                snapshot?.let {
+                    val requests = it.toObjects(BloodRequest::class.java)
+                    val filtered = requests.filter { req ->
+                        val reqLoc = req.hospitalLocation ?: return@filter false
+                        LocationUtils.calculateDistance(userLocation, reqLoc) <= radiusInKm
+                    }
+                    trySend(filtered)
                 }
             }
         awaitClose { subscription.remove() }
