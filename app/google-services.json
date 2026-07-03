@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "405470814505",
+    "firebase_url": "https://ktr-raktha-seva-default-rtdb.firebaseio.com",
     "project_id": "ktr-raktha-seva",
     "storage_bucket": "ktr-raktha-seva.firebasestorage.app"
   },
@@ -12,7 +13,20 @@
           "package_name": "com.example.ktrrakthaseva"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "405470814505-432fb4gliu549rs502jillvd9c8roaa6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ktrrakthaseva",
+            "certificate_hash": "db2c9f0959472d1e6176a034ed9ab7a34a6bfed0"
+          }
+        },
+        {
+          "client_id": "405470814505-0sha26pu6p9afo1r8i3tsoorem4mde6d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDy7tn-I8UGP4V2RdXGDMndIiR5XVu9sOk"
@@ -20,7 +34,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "405470814505-0sha26pu6p9afo1r8i3tsoorem4mde6d.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
