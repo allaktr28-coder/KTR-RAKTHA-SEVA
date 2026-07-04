@@ -199,4 +199,44 @@ class FirebaseRepository @Inject constructor(
             }
         awaitClose { subscription.remove() }
     }
+
+    fun getUserDonationHistory(uid: String): Flow<List<BloodRequest>> = callbackFlow {
+        val subscription = requestsCollection
+            .whereEqualTo("acceptedById", uid)
+            .whereEqualTo("status", RequestStatus.COMPLETED)
+            .orderBy("completedAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, _ ->
+                snapshot?.let { trySend(it.toObjects(BloodRequest::class.java)) }
+            }
+        awaitClose { subscription.remove() }
+    }
+
+    suspend fun findMatchingDonors(bloodType: BloodType, location: GeoPoint, radiusKm: Double): List<User> {
+        val compatibleTypes = BloodCompatibility.getCompatibleBloodTypes(bloodType)
+        
+        val donors = usersCollection
+            .whereIn("bloodType", compatibleTypes.map { it.name })
+            .whereEqualTo("isAvailable", true)
+            .get()
+            .await()
+            .toObjects(User::class.java)
+
+        return donors.filter { donor ->
+            val donorLoc = donor.location ?: return@filter false
+            LocationUtils.calculateDistance(location, donorLoc) <= radiusKm
+        }.sortedBy { donor ->
+            val donorLoc = donor.location!!
+            LocationUtils.calculateDistance(location, donorLoc)
+        }
+    }
+
+    suspend fun postBloodRequest(request: BloodRequest) {
+        val docRef = requestsCollection.document()
+        val requestWithId = request.copy(requestId = docRef.id)
+        docRef.set(requestWithId).await()
+    }
+
+    suspend fun updateUserLocation(uid: String, location: GeoPoint) {
+        usersCollection.document(uid).update("location", location).await()
+    }
 }
