@@ -15,6 +15,14 @@
         { "fieldPath": "points", "order": "DESCENDING" },
         { "fieldPath": "totalDonations", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isAvailable", "order": "ASCENDING" },
+        { "fieldPath": "lastDonationDate", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

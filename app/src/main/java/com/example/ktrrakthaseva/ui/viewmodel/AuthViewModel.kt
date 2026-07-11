@@ -7,6 +7,7 @@ import com.example.ktrrakthaseva.data.model.*
 import com.example.ktrrakthaseva.data.repository.FirebaseRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestoreException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -87,6 +88,40 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    fun loginWithGoogle(idToken: String) {
+        _authState.value = AuthState.Loading
+        viewModelScope.launch {
+            try {
+                val credential = GoogleAuthProvider.getCredential(idToken, null)
+                val result = auth.signInWithCredential(credential).await()
+                val firebaseUser = result.user
+                
+                if (firebaseUser != null) {
+                    val profile = repository.getUserProfile(firebaseUser.uid)
+                    if (profile != null) {
+                        _currentUser.value = profile
+                        _authState.value = AuthState.Authenticated
+                    } else {
+                        // Create new profile for Google user
+                        val newUser = User(
+                            uid = firebaseUser.uid,
+                            name = firebaseUser.displayName ?: "",
+                            email = firebaseUser.email ?: "",
+                            phone = firebaseUser.phoneNumber ?: "",
+                            profileImageUrl = firebaseUser.photoUrl?.toString() ?: ""
+                        )
+                        repository.saveUserProfile(newUser)
+                        _currentUser.value = newUser
+                        _authState.value = AuthState.Authenticated
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Google login failed", e)
+                _authState.value = AuthState.Error(mapFirebaseError(e))
+            }
+        }
+    }
+
     fun register(
         name: String, email: String, phone: String, psw: String, confirmPsw: String,
         dob: String, gender: String, weight: String, city: String, state: String,
@@ -135,6 +170,25 @@ class AuthViewModel @Inject constructor(
                 _authState.value = AuthState.Authenticated
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Registration failed", e)
+                _authState.value = AuthState.Error(mapFirebaseError(e))
+            }
+        }
+    }
+
+    fun sendPasswordReset(email: String) {
+        val trimmedEmail = email.trim()
+        if (trimmedEmail.isBlank()) {
+            _authState.value = AuthState.Error("Email cannot be empty")
+            return
+        }
+
+        _authState.value = AuthState.Loading
+        viewModelScope.launch {
+            try {
+                auth.sendPasswordResetEmail(trimmedEmail).await()
+                _authState.value = AuthState.PasswordResetSent
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Password reset failed", e)
                 _authState.value = AuthState.Error(mapFirebaseError(e))
             }
         }

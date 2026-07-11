@@ -1,6 +1,8 @@
 package com.example.ktrrakthaseva.di
 
 import android.content.Context
+import com.example.ktrrakthaseva.data.repository.BadgeRepository
+import com.example.ktrrakthaseva.data.repository.DonationHistoryRepository
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -27,7 +29,6 @@ object AppModule {
     @Singleton
     fun provideFirestore(): FirebaseFirestore {
         val firestore = FirebaseFirestore.getInstance()
-        // Enable local persistence and optimize for poor connectivity
         val settings = FirebaseFirestoreSettings.Builder()
             .setLocalCacheSettings(PersistentCacheSettings.newBuilder().build())
             .build()
@@ -47,4 +48,14 @@ object AppModule {
     @Singleton
     fun provideFirebaseAnalytics(@ApplicationContext context: Context): FirebaseAnalytics =
         FirebaseAnalytics.getInstance(context)
+
+    @Provides
+    @Singleton
+    fun provideBadgeRepository(firestore: FirebaseFirestore): BadgeRepository =
+        BadgeRepository(firestore)
+
+    @Provides
+    @Singleton
+    fun provideDonationHistoryRepository(firestore: FirebaseFirestore): DonationHistoryRepository =
+        DonationHistoryRepository(firestore)
 }

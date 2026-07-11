@@ -9,10 +9,23 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.example.ktrrakthaseva.MainActivity
 import com.example.ktrrakthaseva.R
+import com.example.ktrrakthaseva.data.repository.FirebaseRepository
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class RaktaSevaMessagingService : FirebaseMessagingService() {
+
+    @Inject
+    lateinit var repository: FirebaseRepository
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         remoteMessage.notification?.let {
@@ -21,7 +34,16 @@ class RaktaSevaMessagingService : FirebaseMessagingService() {
     }
 
     override fun onNewToken(token: String) {
-        // Here you would typically send the token to your server/Firestore
+        val uid = repository.getCurrentUserId()
+        if (uid != null) {
+            serviceScope.launch {
+                try {
+                    repository.updateFcmToken(uid, token)
+                } catch (e: Exception) {
+                    // Log error
+                }
+            }
+        }
     }
 
     private fun sendNotification(title: String, messageBody: String) {
@@ -35,7 +57,7 @@ class RaktaSevaMessagingService : FirebaseMessagingService() {
 
         val channelId = "blood_requests_channel"
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // Replace with app icon
+            .setSmallIcon(R.mipmap.ic_launcher_round) // Fixed icon
             .setContentTitle(title)
             .setContentText(messageBody)
             .setAutoCancel(true)

@@ -67,6 +67,10 @@ class FirebaseRepository @Inject constructor(
         usersCollection.document(user.uid).set(user).await()
     }
 
+    suspend fun updateFcmToken(uid: String, token: String) {
+        usersCollection.document(uid).update("fcmToken", token).await()
+    }
+
     fun getBloodRequests(): Flow<List<BloodRequest>> = callbackFlow {
         val subscription = requestsCollection
             .orderBy("createdAt", Query.Direction.DESCENDING)

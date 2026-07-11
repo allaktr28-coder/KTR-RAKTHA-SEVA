@@ -1,75 +1,40 @@
-# KTR RAKTHA SEVA (GIFT OF LIFE) 🩸
+# KTR RAKTHA SEVA (GIFT OF LIFE)
 
-**Rakta Seva** is a high-tech, real-time blood donation matching platform designed to connect voluntary blood donors with recipients instantly and securely. The app leverages Firebase for its backend and AI-inspired matching algorithms to prioritize life-saving connections based on compatibility, proximity, and urgency.
-
----
+**Rakta Seva** is a high-tech, real-time blood donation matching platform designed to connect voluntary blood donors with recipients instantly and securely. The app leverages Firebase for its backend and AI-inspired matching algorithms to prioritize life-saving connections based on compatibility and proximity.
 
 ## 🚀 Key Features
 
 ### 🔐 Authentication & Identity
-*   **Synchronized Splash:** Intelligent session check during the splash screen ensures users are automatically navigated to the Home screen if already logged in, eliminating race conditions.
-*   **Multi-step Registration:** Secure 3-step onboarding capturing biometric data (Weight, DOB), medical history, and blood type with full input sanitization and validation.
-*   **Persistent Session:** User profiles are cached and synchronized across the app using shared ViewModel scoping within the Navigation Graph.
-*   **Digital Donor Card:** A generated ID card with a unique identifier, blood group, and verification status for donors.
+*   **Multi-step Registration:** Secure onboarding capturing biometric data, medical history, and blood type.
+*   **Persistent Session:** Synchronized splash screen to handle auto-login for existing users.
+*   **Digital Donor Card:** A generated ID card with a unique QR code for verified donors.
 
 ### 🩸 Life-Saving Network
 *   **Live Network Map:** Real-time visualization of nearby compatible donors and urgent requests using Google Maps SATELLITE view.
-*   **AI Smart Match Logic:** Automated filtering and search based on medical blood type compatibility (e.g., prioritizing O- universal donors for emergency needs).
-*   **Emergency Broadcasts:** Live tracking and display of urgent blood requirements in the user's vicinity, powered by Cloud Messaging.
-
-### 🤖 Automated Intelligence (Firebase Functions)
-*   **Proximity Notifications:** Automatic push alerts sent to compatible donors when a new request is posted in their region.
-*   **Smart Availability:** Automated 90-day cooldown management for donors to ensure medical safety after a donation.
-*   **Self-Maintaining DB:** Background logic that automatically cancels stale requests after 48 hours to keep the network accurate.
-*   **Badge Engine:** Server-side logic to award "Life Saver" and "Elite Hero" badges upon verified donation completion.
+*   **AI Smart Match:** Intelligent search that filters donors by blood compatibility (e.g., O- can see all, but AB+ is prioritized for specific needs).
+*   **Emergency Broadcasts:** Push notifications for urgent blood requirements in the user's vicinity.
 
 ### 📊 Community & Gamification
-*   **Global Rankings:** A points-based leaderboard to recognize and reward frequent donors, synchronized in real-time via Firestore listeners.
-*   **Impact Analytics:** Personal statistics showing "Lives Saved" and donation frequency trends.
-*   **Achievement Dossier:** Unlockable badges and achievements to encourage community engagement.
+*   **Global Rankings:** A points-based leaderboard to recognize and reward frequent donors.
+*   **Impact Analytics:** Personal statistics showing lives saved and donation frequency trends.
+*   **Achievement Dossier:** Unlockable badges like "Life Saver" and "Elite Hero" (Gamification).
 
 ### 🛡️ Secure Communication
-*   **Encrypted Chat:** Direct communication channel between requesters and donors with real-time message synchronization and proper sender/receiver bubble alignment.
-*   **Admin Command Center:** A specialized dashboard for managing high-level network statistics, system health, and emergency oversight.
-
----
+*   **Encrypted Chat:** Direct communication channel between requesters and donors to coordinate logistics without exposing personal contact details until necessary.
+*   **Admin Command Center:** A specialized dashboard for managing high-level network statistics and emergency oversight.
 
 ## 🛠 Tech Stack
 
-*   **Language:** Kotlin 2.0.21
+*   **Language:** Kotlin
 *   **UI Framework:** Jetpack Compose (Modern Declarative UI)
-*   **Dependency Injection:** Hilt (using high-performance **KSP**)
+*   **Dependency Injection:** Hilt (Dagger)
 *   **Backend:** Firebase
-    *   **Authentication:** Email/Password with robust error mapping and input sanitization.
-    *   **Firestore:** NoSQL real-time database with optimized indexing and manual fallback deserialization.
-    *   **Cloud Messaging:** Push notifications for urgent alerts.
-    *   **Cloud Functions:** Node.js background triggers for automation (Notifications, Badges, Cleanup).
+    *   **Authentication:** Email/Password & Google Sign-In support.
+    *   **Firestore:** NoSQL real-time database with optimized indexing.
+    *   **Cloud Messaging:** Push notifications for alerts.
+    *   **Analytics & Crashlytics:** Stability and engagement tracking.
 *   **Maps:** Google Maps Compose SDK.
 *   **Architecture:** MVVM (Model-View-ViewModel) with Clean Architecture principles.
-
----
-
-## 🚦 Project Status & Technical Audit
-
-The project has been thoroughly optimized to resolve build conflicts, session bugs, and data synchronization issues found during development.
-
-### ✅ Fixed & Verified Features
-*   **Modern Build System:** Cleaned `gradle.properties` (removed obsolete flags) and migrated Hilt to **KSP** for faster, error-free builds.
-*   **Auth Session Sync:** Splash screen synchronization fixed to prevent unwanted logouts on app start.
-*   **Reactive Chat Stream:** Fixed message loading using `flatMapLatest` in `ChatViewModel`, ensuring chat updates instantly when switching between requests.
-*   **Chat UI Logic:** Fixed alignment issues; message bubbles now correctly identify the sender and align (Right for Sent, Left for Received).
-*   **Firestore Resilience:** Added manual fallback deserializers in `FirebaseRepository` to ensure user profiles load correctly even if Firestore enum mapping fails.
-*   **Release Stability:** Integrated comprehensive ProGuard rules to protect Hilt and Firebase classes in release builds.
-*   **Live Map Implementation:** Fully functional real-time Google Maps integration for tracking donors and requests.
-
-### ⚠️ Final Steps to "Go Live"
-*   **Firestore API:** (CRITICAL) You must manually enable the **Cloud Firestore API** in your Google Cloud Console for the database features to activate.
-*   **Firestore Indexes:** Deploy the `firestore.indexes.json` using the Firebase CLI (`firebase deploy --only firestore:indexes`) to prevent crashes on complex filtered queries.
-*   **Firebase Functions:** Deploy the provided background functions (`firebase deploy --only functions`) to enable automated notifications and badge rewards.
-*   **Google Sign-In:** The UI button is ready; the `AuthViewModel` needs the Google Identity SDK integration for the final login logic.
-*   **Background Location:** For real-time proximity alerts, a `Foreground Service` should be implemented to track locations when the app is minimized.
-
----
 
 ## 🛠 Installation & Setup
 
@@ -77,10 +42,32 @@ The project has been thoroughly optimized to resolve build conflicts, session bu
 2.  **Firebase Setup:**
     *   Enable **Cloud Firestore** and **Authentication** in the Firebase Console.
     *   Download your `google-services.json` and place it in the `app/` directory.
-    *   Add your machine's **SHA-1 fingerprint** to Firebase settings.
+    *   Add your machine's **SHA-1 fingerprint** to Firebase settings for Google Services to work.
 3.  **API Keys:** Add your `MAPS_API_KEY` to the `local.properties` file:
     ```properties
     MAPS_API_KEY=your_key_here
     ```
 4.  **Sync & Run:** Perform a Gradle Sync and run on an emulator or physical device (API 24+).
 
+---
+
+## 🚦 Project Status & Feature Evaluation
+
+I have performed a comprehensive audit of the current codebase. Here is the evaluation of what is working and what requires updates:
+
+### ✅ Working Features
+*   **Core Navigation:** The `NavGraph` is fully implemented with smooth transitions between all 15+ screens.
+*   **Synchronized Authentication:** Fixed the race condition where users were logged out during splash. Login and Register are now robust.
+*   **Multi-step Registration:** The 3-step biometric and medical data collection is fully functional.
+*   **Live Map Implementation:** Google Maps integration is working, displaying donor and request markers.
+*   **Shared State Management:** `AuthViewModel` is correctly scoped to ensure user profiles are consistent across the entire app.
+*   **Database Integration:** Firestore repositories are set up for Users, Requests, and Leaderboards.
+*   **Dependency Injection:** Hilt is correctly configured for all ViewModels and Repositories.
+*   **Testing Infrastructure:** Hilt-supported instrumented tests are ready for UI automation.
+
+### ⚠️ Needs Update / Attention
+*   **Firestore API Activation:** (CRITICAL) You must manually enable the Firestore API in your Google Cloud Console for the database to start working.
+*   **Google Sign-In:** The UI button exists, but the backend logic for `signInWithGoogle` needs to be linked in `AuthViewModel`.
+*   **Achievement System:** The "Achievement Badges" logic is currently a UI placeholder ("Restricted Access"). It needs a Firestore Cloud Function to trigger badge awards when donation status changes.
+*   **Real-time Location:** While permissions are handled, active background location tracking (Foreground Service) should be added to keep the "Live Network" markers accurate while the app is in the background.
+*   **Admin Dashboard:** UI components are ready, but require "Admin" boolean to be set to `true` in a user's Firestore document to access.

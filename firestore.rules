@@ -2,47 +2,83 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // User profiles: Only the owner can write; all authenticated users can read (for matching)
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
     }
 
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    function getRequest(requestId) {
+      return get(/databases/$(database)/documents/requests/$(requestId)).data;
+    }
+
+    // User profiles: Restricted field updates
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == userId
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin', 'points', 'totalDonations', 'badges', 'fcmToken']);
+    }
+
+    // Blood Requests: State transition enforcement
     match /requests/{requestId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
 
-      // Production Security Logic:
-      // 1. Requesters can update their own requests.
-      // 2. Donors can accept 'OPEN' requests by assigning themselves as 'acceptedById' and setting status to 'IN_PROGRESS'.
-      // 3. Admins have full override.
-      allow update: if request.auth != null && (
-        resource.data.requesterId == request.auth.uid ||
-        (
-          resource.data.status == 'OPEN' &&
-          request.resource.data.status == 'IN_PROGRESS' &&
-          request.resource.data.acceptedById == request.auth.uid
-        ) ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
+      allow update: if isSignedIn() && (
+        // (A) Requester edits OPEN request fields only
+        (resource.data.requesterId == request.auth.uid && resource.data.status == 'OPEN' && request.resource.data.status == 'OPEN'
+         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['requesterId', 'requestId'])) ||
+
+        // (B) Requester cancels: OPEN -> CANCELLED
+        (resource.data.requesterId == request.auth.uid && resource.data.status == 'OPEN' && request.resource.data.status == 'CANCELLED'
+         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])) ||
+
+        // (C) Requester completes: IN_PROGRESS -> COMPLETED
+        (resource.data.requesterId == request.auth.uid && resource.data.status == 'IN_PROGRESS' && request.resource.data.status == 'COMPLETED'
+         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completedAt'])) ||
+
+        // (D) Donor accepts: OPEN -> IN_PROGRESS
+        (resource.data.status == 'OPEN' && request.resource.data.status == 'IN_PROGRESS'
+         && request.resource.data.acceptedById == request.auth.uid
+         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedById', 'acceptedAt'])) ||
+
+        isAdmin()
       );
 
-      allow delete: if request.auth != null && (
-        resource.data.requesterId == request.auth.uid ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
-      );
+      allow delete: if isAdmin();
 
+      // Restricted Messaging
       match /messages/{messageId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if isSignedIn() && (
+          request.auth.uid == getRequest(requestId).requesterId ||
+          request.auth.uid == getRequest(requestId).acceptedById ||
+          isAdmin()
+        );
       }
 
+      // Secure Responses
       match /responses/{responseId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == responseId;
+        allow read: if isSignedIn() && (
+          request.auth.uid == responseId ||
+          request.auth.uid == getRequest(requestId).requesterId ||
+          isAdmin()
+        );
+        allow create: if isSignedIn() && request.auth.uid == responseId && request.resource.data.donorId == request.auth.uid;
+        allow update: if false; // Block updates after creation
       }
     }
 
     match /blood_banks/{bankId} {
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Read-only Leaderboard (Updated via Functions)
+    match /leaderboard/{userId} {
+      allow read: if isSignedIn();
       allow write: if false;
     }
   }

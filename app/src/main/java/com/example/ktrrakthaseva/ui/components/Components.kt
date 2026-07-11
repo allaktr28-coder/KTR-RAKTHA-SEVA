@@ -77,6 +77,7 @@ fun TechTopBar(
 @Composable
 fun TechCard(
     modifier: Modifier = Modifier,
+    containerColor: Color = DarkGray.copy(alpha = 0.8f),
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -86,7 +87,7 @@ fun TechCard(
             .padding(vertical = 8.dp)
             .border(1.dp, Color.Gray.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
-        colors = CardDefaults.cardColors(containerColor = DarkGray.copy(alpha = 0.8f)),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {

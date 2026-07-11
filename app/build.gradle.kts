@@ -41,7 +41,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug") // Note: Replace with production signing for real release
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
@@ -77,15 +77,20 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
 
+    // Google Services
+    implementation(libs.play.services.auth)
+    implementation(libs.play.services.location)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     
-    // Hilt Testing
-    androidTestImplementation(libs.hilt.android.testing)
-    kspAndroidTest(libs.hilt.compiler)
-
+    // WorkManager
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
+    
     // Navigation
     implementation(libs.androidx.navigation.compose)
 

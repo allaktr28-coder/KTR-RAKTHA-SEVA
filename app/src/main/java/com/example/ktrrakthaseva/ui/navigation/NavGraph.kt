@@ -115,7 +115,7 @@ fun RaktaSevaNavGraph(navController: NavHostController) {
 
         composable(Screen.Profile.route) {
             ProfileScreen(
-                viewModel = authViewModel, // Use shared ViewModel
+                authViewModel = authViewModel, // Use shared ViewModel
                 onBack = { navController.popBackStack() },
                 onLogout = { 
                     navController.navigate(Screen.Login.route) { 
@@ -129,7 +129,6 @@ fun RaktaSevaNavGraph(navController: NavHostController) {
             )
         }
 
-        // ... remaining routes (BloodMap, History, etc.)
         composable(Screen.PostRequest.route) { PostRequestScreen(onBack = { navController.popBackStack() }) }
         composable(Screen.Leaderboard.route) { LeaderboardScreen(onBack = { navController.popBackStack() }) }
         composable(Screen.FindDonors.route) { FindDonorsScreen(onBack = { navController.popBackStack() }) }

@@ -1,5 +1,9 @@
 package com.example.ktrrakthaseva.ui.screens
 
+import android.app.Activity
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -8,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -28,6 +34,9 @@ import com.example.ktrrakthaseva.data.model.*
 import com.example.ktrrakthaseva.ui.components.LoadingOverlay
 import com.example.ktrrakthaseva.ui.viewmodel.AuthState
 import com.example.ktrrakthaseva.ui.viewmodel.AuthViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import kotlinx.coroutines.delay
 
 // High-tech Theme Colors
@@ -68,7 +77,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    "RAKTA SEVA",
+                    "RAKTHA SEVA",
                     color = Color.White,
                     style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.ExtraBold,
@@ -138,6 +147,23 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showForgotDialog by remember { mutableStateOf(false) }
+    
+    val context = LocalContext.current
+    val webClientId = "405470814505-0sha26pu6p9afo1r8i3tsoorem4mde6d.apps.googleusercontent.com"
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                account.idToken?.let { viewModel.loginWithGoogle(it) }
+            } catch (e: ApiException) {
+                Log.e("AuthScreens", "Google sign in failed", e)
+            }
+        }
+    }
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {
@@ -191,9 +217,15 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Google Sign In
             OutlinedButton(
-                onClick = { /* Implement Google Sign In */ },
+                onClick = {
+                    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken(webClientId)
+                        .requestEmail()
+                        .build()
+                    val googleSignInClient = GoogleSignIn.getClient(context, gso)
+                    googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, Color.Gray)
@@ -268,7 +300,7 @@ fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
-    var step by remember { mutableStateOf(1) }
+    var step by remember { mutableIntStateOf(1) }
     val authState by viewModel.authState.collectAsState()
 
     // Form States
@@ -283,7 +315,7 @@ fun RegisterScreen(
     var city by remember { mutableStateOf("") }
     var state by remember { mutableStateOf("") }
     var bloodType by remember { mutableStateOf<BloodType?>(null) }
-    var donorType by remember { mutableStateOf(DonorType.VOLUNTARY) }
+    val donorType by remember { mutableStateOf(DonorType.VOLUNTARY) }
     var hasMedical by remember { mutableStateOf(false) }
     var medicalNotes by remember { mutableStateOf("") }
     var agreeTerms by remember { mutableStateOf(false) }
@@ -301,10 +333,10 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Box(modifier = Modifier.weight(1f)) {
-                AnimatedContent(targetState = step, transitionSpec = { fadeIn() togetherWith fadeOut() }) { targetStep ->
+                AnimatedContent(targetState = step, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "RegisterStepAnimation") { targetStep ->
                     when (targetStep) {
                         1 -> RegisterStep1(name, { name = it }, email, { email = it }, phone, { phone = it }, password, { password = it }, confirmPassword, { confirmPassword = it })
-                        2 -> RegisterStep2(dob, { dob = it }, weight, { weight = it }, gender, { gender = it }, city, { city = it }, state, { state = it }, bloodType, { bloodType = it }, donorType, { donorType = it }, hasMedical, { hasMedical = it }, medicalNotes, { medicalNotes = it })
+                        2 -> RegisterStep2(dob, { dob = it }, weight, { weight = it }, gender, { gender = it }, city, { city = it }, state, { state = it }, bloodType, { bloodType = it }, hasMedical, { hasMedical = it }, medicalNotes, { medicalNotes = it })
                         3 -> RegisterStep3(name, email, bloodType, agreeTerms, { agreeTerms = it }, agreePrivacy, { agreePrivacy = it }, agreeAlerts, { agreeAlerts = it })
                     }
                 }
@@ -331,6 +363,20 @@ fun RegisterScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(if (step < 3) "NEXT" else "CREATE ACCOUNT", fontWeight = FontWeight.Bold)
+                }
+            }
+
+            if (step == 1) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Already have an account?", color = Color.Gray)
+                    TextButton(onClick = onNavigateToLogin) {
+                        Text("Login", color = GlowRed, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
@@ -396,7 +442,6 @@ fun RegisterStep2(
     city: String, onCityChange: (String) -> Unit,
     state: String, onStateChange: (String) -> Unit,
     bloodType: BloodType?, onBloodTypeChange: (BloodType?) -> Unit,
-    donorType: String, onDonorTypeChange: (String) -> Unit,
     hasMedical: Boolean, onHasMedicalChange: (Boolean) -> Unit,
     medicalNotes: String, onMedicalNotesChange: (String) -> Unit
 ) {
@@ -434,7 +479,7 @@ fun RegisterStep2(
         Spacer(modifier = Modifier.height(24.dp))
         Text("Blood Group", color = Color.Gray, style = MaterialTheme.typography.labelMedium)
         LazyVerticalGrid(columns = GridCells.Fixed(4), modifier = Modifier.height(100.dp), userScrollEnabled = false) {
-            items(BloodType.values()) { type ->
+            items(BloodType.entries) { type ->
                 val isSelected = bloodType == type
                 Box(
                     modifier = Modifier
@@ -457,7 +502,7 @@ fun RegisterStep2(
             Switch(checked = hasMedical, onCheckedChange = onHasMedicalChange, colors = SwitchDefaults.colors(checkedThumbColor = GlowRed))
         }
         if (hasMedical) {
-            AuthTextField(medicalNotes, onMedicalNotesChange, "Describe conditions...", Icons.Default.Notes)
+            AuthTextField(medicalNotes, onMedicalNotesChange, "Describe conditions...", Icons.AutoMirrored.Filled.Notes)
         }
     }
 }
